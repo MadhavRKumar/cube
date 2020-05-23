@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 let camera, controls, scene, renderer; 
-let cube = [], cubeMaterials;
+let cube = [], centers = [], cubeMaterials;
 let cubeSize = 3, spacing = 0.25, dimension = 3, increment = cubeSize + spacing;
 let colors = [ 
 	0xB90000, 0xFF5900, // LEFT RIGHT 
@@ -19,11 +19,15 @@ const L = new THREE.Vector3(-1,  0,  0),
 	  F = new THREE.Vector3( 0,  0,  1),
 	  B = new THREE.Vector3( 0,  0, -1);
 
+const FACES = [L, R, U, D, F, B];
+
 let isDragging = false;
 let prevMouse = { 
 	x: 0,
 	y: 0
 };
+
+let t = 0.0, currentSelection = [], isTurning = false, turnFace, turnDir, turnSpeed = 1/(8.0);
 
 init();
 animate();
@@ -80,6 +84,7 @@ function handleMouseMove(event) {
 
 function onKeyDown(event) {
 	let keyCode = event.key;
+	if(!isTurning) {
 	if(keyCode == 'l') {
 		turn(L, 1);
 	}
@@ -116,7 +121,7 @@ function onKeyDown(event) {
 	if(keyCode == 'B') {
 		turn(B,-1);
 	}
-
+}
 }
 
 function initMaterials() {
@@ -157,7 +162,12 @@ function createCubies() {
 					setToBlack(materials, LEFT);
 				}
 
-				newCubie(x,y,z, materials);
+				let qb = newCubie(x,y,z, materials);
+				if(isCenter(offI, offJ, offK)) {
+					centers.push(qb);	
+				}	
+				scene.add(qb);
+				cube.push(qb);
 			}
 		}
 	}
@@ -167,31 +177,49 @@ function setToBlack(materials, side) {
 	materials[side].color.setHex(0x000000);
 }
 
+function isCenter(i,j,k) {
+	return (( i == 0 && j == 0) || (i == 0 && k == 0) || (j == 0 && k == 0)) &&!(i == 0 && j == 0 && k == 0);
+}
+
 function newCubie(x,y,z, materials) {
 	let cubeGeometry = new THREE.CubeGeometry(cubeSize, cubeSize, cubeSize);
 	let qb = new THREE.Mesh(cubeGeometry, materials);	
 	qb.position.set(x,y,z);
-	scene.add(qb);
-	cube.push(qb);
+	return qb;
 }
 
 function turn(face, dir) {
-	let selection = select(face);
-	let quaternion = new THREE.Quaternion();
-	quaternion.setFromAxisAngle(face, dir*Math.PI/2);
-	let rot = new THREE.Matrix4();
-	rot.makeRotationFromQuaternion(quaternion);
-	for(let qb of selection) {
-		qb.applyMatrix4(rot);
-	}
+	let center = selectCenter(face);
+	turnFace = center.position.clone();
+	turnFace.normalize();	
+	let selection = select(turnFace);
+	currentSelection = selection;
+	isTurning = true;
+	turnDir = dir;
+}
+
+function selectCenter(face) {
+	let selectCenter;
+	let minDot = 1000;
+	for(let qb of centers) {
+		let pos = qb.position.clone();
+		pos.normalize();
+		let dot = face.dot(pos);
+		if(dot < minDot && dot > 0.6) {
+			selectCenter = qb;
+			minDot = dot;
+		}	
+	}	
+	return selectCenter;
 }
 
 function select(face) {
 	let selection = [];
 	for(let qb of cube) {
 		let pos = qb.position.clone();
+		pos.normalize();
 		let dot = face.dot(pos);	
-		if(dot > 0.5) {
+		if(dot > 0.1) {
 			selection.push(qb)
 		}
 	}
@@ -202,6 +230,22 @@ function animate() {
 	//controls.update();	
 	requestAnimationFrame( animate );
 	renderer.render( scene, camera );
+
+	if(isTurning) {
+		let quaternion = new THREE.Quaternion();
+		quaternion.setFromAxisAngle(turnFace, turnSpeed*turnDir*Math.PI/2);
+		let rot = new THREE.Matrix4();
+		rot.makeRotationFromQuaternion(quaternion);
+		for(let qb of currentSelection) {
+			qb.applyMatrix4(rot);
+		}
+		t += turnSpeed;
+	}
+	
+	if(t >= 1) {
+		isTurning = false;
+		t = 0;
+	}
 }
 
 function toRadians(deg) {

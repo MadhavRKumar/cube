@@ -19,13 +19,19 @@ const L = new THREE.Vector3(-1,  0,  0),
 	  F = new THREE.Vector3( 0,  0,  1),
 	  B = new THREE.Vector3( 0,  0, -1);
 
+let isDragging = false;
+let prevMouse = { 
+	x: 0,
+	y: 0
+};
+
 init();
 animate();
 
 
 function init() {
 	camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
-	camera.position.z = 50;
+	camera.position.z = 40;
 
 	scene = new THREE.Scene();
 	
@@ -34,11 +40,42 @@ function init() {
 
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.setSize( window.innerWidth, window.innerHeight );
-	document.body.appendChild( renderer.domElement );
+	document.body.appendChild( renderer.domElement );	
 
-	controls = new OrbitControls(camera, renderer.domElement);	
-	
 	document.addEventListener("keydown", onKeyDown, false);
+	
+	renderer.domElement.onmousedown = (e) => { isDragging = true; }
+	renderer.domElement.onmouseup   = (e) => { isDragging = false;}
+	renderer.domElement.onmousemove = handleMouseMove;
+}
+
+function handleMouseMove(event) {
+	let deltaMove = { 
+		x: event.offsetX - prevMouse.x,
+		y: event.offsetY - prevMouse.y	
+	};
+
+	if (isDragging) {
+		let xQuat = new THREE.Quaternion();
+		xQuat.setFromAxisAngle(U, toRadians(deltaMove.x));
+		let xMat = new THREE.Matrix4();
+		xMat.makeRotationFromQuaternion(xQuat);		
+
+		let yQuat = new THREE.Quaternion();
+		yQuat.setFromAxisAngle(R, toRadians(deltaMove.y));
+		let yMat = new THREE.Matrix4();
+		yMat.makeRotationFromQuaternion(yQuat);
+
+		cube.forEach((qb) => {
+			qb.applyMatrix4(xMat);
+			qb.applyMatrix4(yMat);
+		});
+	}
+	
+	prevMouse = {
+		x: event.offsetX,
+		y: event.offsetY
+	}
 }
 
 function onKeyDown(event) {
@@ -158,13 +195,15 @@ function select(face) {
 			selection.push(qb)
 		}
 	}
-	console.log(selection.length);
 	return selection;	
 }
 
 function animate() {
-	controls.update();	
+	//controls.update();	
 	requestAnimationFrame( animate );
 	renderer.render( scene, camera );
+}
 
+function toRadians(deg) {
+	return deg * (Math.PI / 180);
 }

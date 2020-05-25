@@ -27,7 +27,7 @@ let prevMouse = {
 	y: 0
 };
 
-let t = 0.0, currentSelection = [], isTurning = false, turnFace, turnDir, turnSpeed = 1/(8.0);
+let t = 0.0, currentSelection = [], isTurning = false, turnFace, turnDir, turnSpeed = 1/(12.0);
 
 init();
 animate();
@@ -200,14 +200,14 @@ function turn(face, dir) {
 
 function selectCenter(face) {
 	let selectCenter;
-	let minDot = 1000;
+	let maxDot  = -1000;
 	for(let qb of centers) {
 		let pos = qb.position.clone();
 		pos.normalize();
 		let dot = face.dot(pos);
-		if(dot < minDot && dot > 0.6) {
+		if(dot > maxDot) {
 			selectCenter = qb;
-			minDot = dot;
+			maxDot = dot;
 		}	
 	}	
 	return selectCenter;

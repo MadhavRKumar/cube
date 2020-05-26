@@ -21,11 +21,13 @@ const L = new THREE.Vector3(-1,  0,  0),
 
 const FACES = [L, R, U, D, F, B];
 
-let isDragging = false;
+let isDragging = false, isMouseOnCube = false;
 let prevMouse = { 
 	x: 0,
 	y: 0
 };
+let mouse = new THREE.Vector2();
+let raycaster = new THREE.Raycaster();
 
 let t = 0.0, currentSelection = [], isTurning = false, turnFace, turnDir, turnSpeed = 1/(12.0);
 
@@ -48,17 +50,37 @@ function init() {
 
 	document.addEventListener("keydown", onKeyDown, false);
 	
-	renderer.domElement.onmousedown = (e) => { isDragging = true; }
+	renderer.domElement.onmousedown = handleMouseDown; 
 	renderer.domElement.onmouseup   = (e) => { isDragging = false;}
 	renderer.domElement.onmousemove = handleMouseMove;
 }
 
+function handleMouseDown(event) {
+	raycaster.setFromCamera(mouse, camera);
+
+	let intersects = raycaster.intersectObjects(scene.children);
+	isMouseOnCube = intersects.length > 0;
+	isDragging = !isMouseOnCube;
+	if(isMouseOnCube) {
+		let norm = intersects[0].face.normal;
+		let mat = new THREE.Matrix4();
+		mat.extractRotation(intersects[0].object.matrix);
+		norm.applyMatrix4(mat);
+		console.log(norm);
+	}
+}
+
 function handleMouseMove(event) {
+	// calculate mouse position in normalized device coordinates
+	// (-1 to +1) for both components
+	mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+	mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+
 	let deltaMove = { 
 		x: event.offsetX - prevMouse.x,
 		y: event.offsetY - prevMouse.y	
 	};
-
+	
 	if (isDragging) {
 		let xQuat = new THREE.Quaternion();
 		xQuat.setFromAxisAngle(U, toRadians(deltaMove.x));
@@ -81,6 +103,7 @@ function handleMouseMove(event) {
 		y: event.offsetY
 	}
 }
+
 
 function onKeyDown(event) {
 	let keyCode = event.key;
@@ -229,9 +252,7 @@ function select(face) {
 function animate() {
 	//controls.update();	
 	requestAnimationFrame( animate );
-	renderer.render( scene, camera );
-
-	if(isTurning) {
+/*	if(isTurning) {
 		let quaternion = new THREE.Quaternion();
 		quaternion.setFromAxisAngle(turnFace, turnSpeed*turnDir*Math.PI/2);
 		let rot = new THREE.Matrix4();
@@ -246,6 +267,9 @@ function animate() {
 		isTurning = false;
 		t = 0;
 	}
+*/
+	renderer.render( scene, camera );
+
 }
 
 function toRadians(deg) {

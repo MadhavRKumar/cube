@@ -28,6 +28,7 @@ let prevMouse = {
 };
 let mouse = new THREE.Vector2();
 let raycaster = new THREE.Raycaster();
+let intersected;
 
 let t = 0.0, currentSelection = [], isTurning = false, turnFace, turnDir, turnSpeed = 1/(12.0);
 
@@ -51,7 +52,7 @@ function init() {
 	document.addEventListener("keydown", onKeyDown, false);
 	
 	renderer.domElement.onmousedown = handleMouseDown; 
-	renderer.domElement.onmouseup   = (e) => { isDragging = false;}
+	renderer.domElement.onmouseup   = (e) => { isDragging = false; isMouseOnCube = false;}
 	renderer.domElement.onmousemove = handleMouseMove;
 }
 
@@ -62,19 +63,15 @@ function handleMouseDown(event) {
 	isMouseOnCube = intersects.length > 0;
 	isDragging = !isMouseOnCube;
 	if(isMouseOnCube) {
-		let norm = intersects[0].face.normal;
-		let mat = new THREE.Matrix4();
-		mat.extractRotation(intersects[0].object.matrix);
-		norm.applyMatrix4(mat);
-		console.log(norm);
+		intersected = intersects[0];
 	}
 }
 
 function handleMouseMove(event) {
 	// calculate mouse position in normalized device coordinates
 	// (-1 to +1) for both components
-	mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-	mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+	mouse.x = (event.offsetX / window.innerWidth) * 2 - 1;
+	mouse.y = -(event.offsetY / window.innerHeight) * 2 + 1
 
 	let deltaMove = { 
 		x: event.offsetX - prevMouse.x,
@@ -97,10 +94,48 @@ function handleMouseMove(event) {
 			qb.applyMatrix4(yMat);
 		});
 	}
+	else if(isMouseOnCube && !isTurning) {
+		let norm = intersected.face.normal.clone();
+		let mat = new THREE.Matrix4();
+		mat.extractRotation(intersected.object.matrix);
+		norm.applyMatrix4(mat);
+		norm.normalize();
+		let proj = project(deltaMove);
+		let face = new THREE.Vector3();
+		face.crossVectors(norm, proj);
+		face.normalize();
+		let axis = face.clone();
+		let dir = (proj.x === 0) ? -Math.sign(proj.y) : Math.sign(proj.x);
+		let pos = intersected.point.normalize();
+		let dot = face.dot(pos);
+		if(dot < 0) {
+			face.negate();
+		}
+		if(face.x > 0 || face.y < 0) {
+			dir *= -1;
+		}
+		turn(face, dir);
+	}
 	
 	prevMouse = {
 		x: event.offsetX,
 		y: event.offsetY
+	}
+}
+
+function mag(vec) {
+	let {x,y,z=0} = vec;
+	return Math.hypot(x,y,z);
+}
+
+function project(vec) {
+	let x = Math.abs(vec.x);
+	let y = Math.abs(vec.y);	
+	if(x > y) {
+		return new THREE.Vector3(vec.x, 0, 0);
+	}
+	else {
+		return new THREE.Vector3(0, vec.y, 0);
 	}
 }
 
@@ -252,7 +287,7 @@ function select(face) {
 function animate() {
 	//controls.update();	
 	requestAnimationFrame( animate );
-/*	if(isTurning) {
+	if(isTurning) {
 		let quaternion = new THREE.Quaternion();
 		quaternion.setFromAxisAngle(turnFace, turnSpeed*turnDir*Math.PI/2);
 		let rot = new THREE.Matrix4();
@@ -265,9 +300,10 @@ function animate() {
 	
 	if(t >= 1) {
 		isTurning = false;
+		isMouseOnCube = false;
 		t = 0;
 	}
-*/
+
 	renderer.render( scene, camera );
 
 }

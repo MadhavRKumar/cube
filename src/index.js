@@ -1,7 +1,6 @@
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
-let camera, controls, scene, renderer; 
+let camera, scene, renderer; 
 let cube = [], centers = [], cubeMaterials;
 let cubeSize = 3, spacing = 0.25, dimension = 3, increment = cubeSize + spacing;
 let colors = [ 
@@ -35,7 +34,7 @@ let t = 0.0, currentSelection = [], isTurning = false, turnFace, turnDir, turnSp
 init();
 animate();
 
-
+/*** INITIALIZATION ***/
 function init() {
 	camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
 	camera.position.z = 40;
@@ -48,8 +47,6 @@ function init() {
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	document.body.appendChild( renderer.domElement );	
-
-	document.addEventListener("keydown", onKeyDown, false);
 	
 	renderer.domElement.onmousedown = handleMouseDown; 
 	renderer.domElement.onmouseup   = (e) => { isDragging = false; isMouseOnCube = false;}
@@ -95,26 +92,7 @@ function handleMouseMove(event) {
 		});
 	}
 	else if(isMouseOnCube && !isTurning) {
-		let norm = intersected.face.normal.clone();
-		let mat = new THREE.Matrix4();
-		mat.extractRotation(intersected.object.matrix);
-		norm.applyMatrix4(mat);
-		norm.normalize();
-		let proj = project(deltaMove);
-		let face = new THREE.Vector3();
-		face.crossVectors(norm, proj);
-		face.normalize();
-		let axis = face.clone();
-		let dir = (proj.x === 0) ? -Math.sign(proj.y) : Math.sign(proj.x);
-		let pos = intersected.point.normalize();
-		let dot = face.dot(pos);
-		if(dot < 0) {
-			face.negate();
-		}
-		if(face.x > 0 || face.y < 0) {
-			dir *= -1;
-		}
-		turn(face, dir);
+		handleCubeTurn(deltaMove);
 	}
 	
 	prevMouse = {
@@ -123,64 +101,6 @@ function handleMouseMove(event) {
 	}
 }
 
-function mag(vec) {
-	let {x,y,z=0} = vec;
-	return Math.hypot(x,y,z);
-}
-
-function project(vec) {
-	let x = Math.abs(vec.x);
-	let y = Math.abs(vec.y);	
-	if(x > y) {
-		return new THREE.Vector3(vec.x, 0, 0);
-	}
-	else {
-		return new THREE.Vector3(0, vec.y, 0);
-	}
-}
-
-
-function onKeyDown(event) {
-	let keyCode = event.key;
-	if(!isTurning) {
-	if(keyCode == 'l') {
-		turn(L, 1);
-	}
-	if(keyCode == 'L') {
-		turn(L,-1);
-	}
-	if(keyCode == 'u') {
-		turn(U, 1);
-	}
-	if(keyCode == 'U') {
-		turn(U,-1);
-	}
-	if(keyCode == 'r') {
-		turn(R, 1);
-	}
-	if(keyCode == 'R') {
-		turn(R,-1);
-	}
-	if(keyCode == 'd') {
-		turn(D, 1);
-	}
-	if(keyCode == 'D') {
-		turn(D,-1);
-	}
-	if(keyCode == 'f') {
-		turn(F, 1);
-	}
-	if(keyCode == 'F') {
-		turn(F,-1);
-	}
-	if(keyCode == 'b') {
-		turn(B, 1);
-	}
-	if(keyCode == 'B') {
-		turn(B,-1);
-	}
-}
-}
 
 function initMaterials() {
 	cubeMaterials = colors.map( (c) => new THREE.MeshBasicMaterial({color: c}));
@@ -198,28 +118,7 @@ function createCubies() {
 				let materials = cubeMaterials.map(m => new THREE.MeshBasicMaterial({color: m.color}));
 				let offK = (k - positionOffset);
 				let z = offK * increment;
-
-				if((offJ > -1)) {
-					setToBlack(materials, BOTTOM);
-				}
-				if((offJ < 1)) {
-					setToBlack(materials, TOP);
-				}
-
-				if((offK > -1)) {
-					setToBlack(materials, BACK);
-				}
-				if((offK < 1)) {
-					setToBlack(materials, FRONT);
-				}	
-
-				if((offI > -1)) {
-					setToBlack(materials, RIGHT);
-				}
-				if((offI < 1)) {
-					setToBlack(materials, LEFT);
-				}
-
+				setHiddenSidesToBlack(materials, offI, offJ, offK);
 				let qb = newCubie(x,y,z, materials);
 				if(isCenter(offI, offJ, offK)) {
 					centers.push(qb);	
@@ -231,6 +130,36 @@ function createCubies() {
 	}
 }
 
+function newCubie(x,y,z, materials) {
+	let cubeGeometry = new THREE.CubeGeometry(cubeSize, cubeSize, cubeSize);
+	let qb = new THREE.Mesh(cubeGeometry, materials);	
+	qb.position.set(x,y,z);
+	return qb;
+}
+
+function setHiddenSidesToBlack(materials, offI, offJ, offK) {
+		if((offJ > -1)) {
+			setToBlack(materials, BOTTOM);
+		}
+		if((offJ < 1)) {
+			setToBlack(materials, TOP);
+		}
+
+		if((offK > -1)) {
+			setToBlack(materials, BACK);
+		}
+		if((offK < 1)) {
+			setToBlack(materials, FRONT);
+		}	
+
+		if((offI > -1)) {
+			setToBlack(materials, RIGHT);
+		}
+		if((offI < 1)) {
+			setToBlack(materials, LEFT);
+		}
+}
+
 function setToBlack(materials, side) {
 	materials[side].color.setHex(0x000000);
 }
@@ -239,11 +168,35 @@ function isCenter(i,j,k) {
 	return (( i == 0 && j == 0) || (i == 0 && k == 0) || (j == 0 && k == 0)) &&!(i == 0 && j == 0 && k == 0);
 }
 
-function newCubie(x,y,z, materials) {
-	let cubeGeometry = new THREE.CubeGeometry(cubeSize, cubeSize, cubeSize);
-	let qb = new THREE.Mesh(cubeGeometry, materials);	
-	qb.position.set(x,y,z);
-	return qb;
+/*** TURNING ***/
+function handleCubeTurn(deltaMove) {
+		let norm = intersected.face.normal.clone();
+		let mat = new THREE.Matrix4();
+		mat.extractRotation(intersected.object.matrix);
+		norm.applyMatrix4(mat);
+		norm.normalize();
+
+		let proj = project(deltaMove);
+
+		let face = new THREE.Vector3();
+		face.crossVectors(norm, proj);
+		face.normalize();
+
+		let pos = intersected.point.normalize();
+		let dot = face.dot(pos);
+		// a negative dot product tells us that the chosen face is on the
+		// opposite side of the cube 
+		if(dot < 0) {
+			face.negate();
+		}
+		
+		let dir = (proj.x === 0) ? -Math.sign(proj.y) : Math.sign(proj.x);
+		// clockwise and counter-clockwise are oppposite for R and D faces 
+		if(face.x > 0 || face.y < 0) {
+			dir *= -1;
+		}
+
+		turn(face, dir);
 }
 
 function turn(face, dir) {
@@ -284,8 +237,8 @@ function select(face) {
 	return selection;	
 }
 
+/*** ANIMATION LOOP ***/
 function animate() {
-	//controls.update();	
 	requestAnimationFrame( animate );
 	if(isTurning) {
 		let quaternion = new THREE.Quaternion();
@@ -306,6 +259,19 @@ function animate() {
 
 	renderer.render( scene, camera );
 
+}
+
+/*** MISC UTILS ***/
+
+function project(vec) {
+	let x = Math.abs(vec.x);
+	let y = Math.abs(vec.y);	
+	if(x > y) {
+		return new THREE.Vector3(vec.x, 0, 0);
+	}
+	else {
+		return new THREE.Vector3(0, vec.y, 0);
+	}
 }
 
 function toRadians(deg) {

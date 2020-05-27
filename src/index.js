@@ -63,9 +63,7 @@ function init() {
 }
 
 function handleMouseUp(event) {
-	let mag = Math.hypot(deltaMove.x, deltaMove.y);
-	console.log(mag);
-	if(isMouseOnCube && !isTurning && mag >= 20 && !isDragging) {
+	if(isMouseOnCube && !isTurning && !isDragging) {
 		handleCubeTurn(deltaMove);
 	}	
 	isDragging = false;

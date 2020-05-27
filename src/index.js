@@ -121,7 +121,7 @@ function handleMouseMove(event) {
 		y: event.pageY - prevMouse.y	
 	};
 	
-	if (isDragging) {
+	if (isDragging && !isTurning) {
 		let xQuat = new THREE.Quaternion();
 		xQuat.setFromAxisAngle(U, toRadians(deltaMove.x));
 		let xMat = new THREE.Matrix4();

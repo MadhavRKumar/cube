@@ -24,12 +24,17 @@ let isDragging = false, isMouseOnCube = false;
 let prevMouse = { 
 	x: 0,
 	y: 0
+}, 
+deltaMove = {
+	x: 0,
+	y: 0
 };
+
 let mouse = new THREE.Vector2();
 let raycaster = new THREE.Raycaster();
 let intersected;
 
-let t = 0.0, currentSelection = [], isTurning = false, turnFace, turnDir, turnSpeed = 1/(12.0);
+let t = 0.0, currentSelection = [], isTurning = false, turnFace, turnDir, turnSpeed = 1/(8.0);
 
 init();
 animate();
@@ -49,12 +54,22 @@ function init() {
 	document.body.appendChild( renderer.domElement );	
 	
 	renderer.domElement.onmousedown = handleMouseDown; 
-	renderer.domElement.onmouseup   = (e) => { isDragging = false; isMouseOnCube = false;}
 	renderer.domElement.onmousemove = handleMouseMove;
+	renderer.domElement.onmouseup   = handleMouseUp; 
 
 	renderer.domElement.ontouchstart = handleTouchStart;
 	renderer.domElement.ontouchmove = handleTouchMove;
-	renderer.domElement.ontouchend = (e) => { isDragging = false; isMouseOnCube = false;}
+	renderer.domElement.ontouchend = handleMouseUp; 
+}
+
+function handleMouseUp(event) {
+	let mag = Math.hypot(deltaMove.x, deltaMove.y);
+	console.log(mag);
+	if(isMouseOnCube && !isTurning && mag >= 20 && !isDragging) {
+		handleCubeTurn(deltaMove);
+	}	
+	isDragging = false;
+	isMouseOnCube = false;
 }
 
 function handleTouchStart(event) {
@@ -82,7 +97,9 @@ function handleMouseDown(event) {
 	}
 }
 
-function handleTouchMove(event) { event.preventDefault(); handleMouseMove(event.touches[0]);
+function handleTouchMove(event) { 
+	event.preventDefault(); 
+	handleMouseMove(event.touches[0]);
 }
 
 function handleMouseMove(event) {
@@ -92,7 +109,7 @@ function handleMouseMove(event) {
 	mouse.x = (event.pageX / window.innerWidth) * 2 - 1;
 	mouse.y = -(event.pageY / window.innerHeight) * 2 + 1
 
-	let deltaMove = { 
+	deltaMove = { 
 		x: event.pageX - prevMouse.x,
 		y: event.pageY - prevMouse.y	
 	};
@@ -113,10 +130,7 @@ function handleMouseMove(event) {
 			qb.applyMatrix4(yMat);
 		});
 	}
-	else if(isMouseOnCube && !isTurning) {
-		handleCubeTurn(deltaMove);
-	}
-	
+
 	prevMouse = {
 		x: event.pageX,
 		y: event.pageY

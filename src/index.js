@@ -19,6 +19,7 @@ const L = new THREE.Vector3(-1,  0,  0),
 	  B = new THREE.Vector3( 0,  0, -1);
 
 const FACES = [L, R, U, D, F, B];
+const ROTATE_FACTOR = 0.15;
 
 let isDragging = false, isMouseOnCube = false;
 let prevMouse = { 
@@ -122,15 +123,8 @@ function handleMouseMove(event) {
 	};
 	
 	if (isDragging && !isTurning) {
-		let xQuat = new THREE.Quaternion();
-		xQuat.setFromAxisAngle(U, toRadians(deltaMove.x));
-		let xMat = new THREE.Matrix4();
-		xMat.makeRotationFromQuaternion(xQuat);		
-
-		let yQuat = new THREE.Quaternion();
-		yQuat.setFromAxisAngle(R, toRadians(deltaMove.y));
-		let yMat = new THREE.Matrix4();
-		yMat.makeRotationFromQuaternion(yQuat);
+		let xMat = makeRotationMatrix(U, deltaMove.x*ROTATE_FACTOR);
+		let yMat = makeRotationMatrix(R, deltaMove.y*ROTATE_FACTOR);
 
 		cube.forEach((qb) => {
 			qb.applyMatrix4(xMat);
@@ -142,6 +136,15 @@ function handleMouseMove(event) {
 		x: event.pageX,
 		y: event.pageY
 	}
+}
+
+function makeRotationMatrix(dir, angle, isRadians=false) {
+	angle = isRadians ? angle : toRadians(angle);
+	let quat = new THREE.Quaternion();
+	quat.setFromAxisAngle(dir, angle);
+	let mat = new THREE.Matrix4();
+	mat.makeRotationFromQuaternion(quat);
+	return mat;
 }
 
 
@@ -284,10 +287,7 @@ function select(face) {
 function animate() {
 	requestAnimationFrame( animate );
 	if(isTurning) {
-		let quaternion = new THREE.Quaternion();
-		quaternion.setFromAxisAngle(turnFace, turnSpeed*turnDir*Math.PI/2);
-		let rot = new THREE.Matrix4();
-		rot.makeRotationFromQuaternion(quaternion);
+		let rot = makeRotationMatrix(turnFace, turnSpeed*turnDir*Math.PI/2, true); 
 		for(let qb of currentSelection) {
 			qb.applyMatrix4(rot);
 		}

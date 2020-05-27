@@ -1,9 +1,9 @@
 import * as THREE from 'three'
 
-let camera, scene, renderer; 
-let cube = [], centers = [], cubeMaterials;
-let cubeSize = 3, spacing = 0.25, dimension = 3, increment = cubeSize + spacing;
-let colors = [ 
+let camera, scene, renderer, cubeMaterials; 
+const cube = [], centers = [];
+const cubeSize = 3, spacing = 0.25, dimension = 3, increment = cubeSize + spacing;
+const colors = [ 
 	0xB90000, 0xFF5900, // LEFT RIGHT 
 	0xFFFFFF, 0xFFD500, // TOP BOTTOM
 	0x009B48, 0x0045AD, // FRONT BACK 
@@ -21,8 +21,8 @@ const L = new THREE.Vector3(-1,  0,  0),
 const FACES = [L, R, U, D, F, B];
 const ROTATE_FACTOR = 0.15;
 
-let isDragging = false, isMouseOnCube = false;
-let prevMouse = { 
+let isDragging = false, isMouseOnCube = false, isTurning = false;
+const prevMouse = { 
 	x: 0,
 	y: 0
 }, 
@@ -31,12 +31,12 @@ deltaMove = {
 	y: 0
 };
 
-let mouse = new THREE.Vector2();
-let raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const raycaster = new THREE.Raycaster();
 let intersected;
 
-let t = 0.0, currentSelection = [], isTurning = false, turnFace, turnDir, turnSpeed = 1/(8.0);
-
+let  t = 0.0, turnFace, turnDir, currentSelection;
+const turnSpeed = 1/(8.0); 
 init();
 animate();
 
@@ -58,8 +58,8 @@ function init() {
 	renderer.domElement.onmousemove = handleMouseMove;
 	renderer.domElement.onmouseup   = handleMouseUp; 
 
-	renderer.domElement.ontouchstart = handleTouchStart;
-	renderer.domElement.ontouchmove = handleTouchMove;
+	renderer.domElement.ontouchstart = handconstouchStart;
+	renderer.domElement.ontouchmove = handconstouchMove;
 	renderer.domElement.ontouchend = handleMouseUp; 
 	
 	window.onresize = handleResize;
@@ -80,12 +80,11 @@ function handleMouseUp(event) {
 	isMouseOnCube = false;
 }
 
-function handleTouchStart(event) {
+function handconstouchStart(event) {
 	event.preventDefault();
-	prevMouse = {
-		x: event.touches[0].pageX,
-		y: event.touches[0].pageY
-	}
+	prevMouse.x = event.touches[0].pageX;
+	prevMouse.y = event.touches[0].pageY;
+	
 	
 	mouse.x = (event.touches[0].pageX / window.innerWidth) * 2 - 1;
 	mouse.y = -(event.touches[0].pageY / window.innerHeight) * 2 + 1
@@ -97,7 +96,7 @@ function handleTouchStart(event) {
 function handleMouseDown(event) {
 	raycaster.setFromCamera(mouse, camera);
 
-	let intersects = raycaster.intersectObjects(scene.children);
+	const intersects = raycaster.intersectObjects(scene.children);
 	isMouseOnCube = intersects.length > 0;
 	isDragging = !isMouseOnCube;
 	if(isMouseOnCube) {
@@ -105,7 +104,7 @@ function handleMouseDown(event) {
 	}
 }
 
-function handleTouchMove(event) { 
+function handconstouchMove(event) { 
 	event.preventDefault(); 
 	handleMouseMove(event.touches[0]);
 }
@@ -117,14 +116,12 @@ function handleMouseMove(event) {
 	mouse.x = (event.pageX / window.innerWidth) * 2 - 1;
 	mouse.y = -(event.pageY / window.innerHeight) * 2 + 1
 
-	deltaMove = { 
-		x: event.pageX - prevMouse.x,
-		y: event.pageY - prevMouse.y	
-	};
+	deltaMove.x = event.pageX - prevMouse.x;
+	deltaMove.y = event.pageY - prevMouse.y;
 	
 	if (isDragging && !isTurning) {
-		let xMat = makeRotationMatrix(U, deltaMove.x*ROTATE_FACTOR);
-		let yMat = makeRotationMatrix(R, deltaMove.y*ROTATE_FACTOR);
+		const xMat = makeRotationMatrix(U, deltaMove.x*ROTATE_FACTOR);
+		const yMat = makeRotationMatrix(R, deltaMove.y*ROTATE_FACTOR);
 
 		cube.forEach((qb) => {
 			qb.applyMatrix4(xMat);
@@ -132,17 +129,15 @@ function handleMouseMove(event) {
 		});
 	}
 
-	prevMouse = {
-		x: event.pageX,
-		y: event.pageY
-	}
+	prevMouse.x = event.pageX;
+	prevMouse.y =  event.pageY;
 }
 
 function makeRotationMatrix(dir, angle, isRadians=false) {
 	angle = isRadians ? angle : toRadians(angle);
-	let quat = new THREE.Quaternion();
+	const quat = new THREE.Quaternion();
 	quat.setFromAxisAngle(dir, angle);
-	let mat = new THREE.Matrix4();
+	const mat = new THREE.Matrix4();
 	mat.makeRotationFromQuaternion(quat);
 	return mat;
 }
@@ -155,17 +150,17 @@ function initMaterials() {
 function createCubies() {
 	const positionOffset = (dimension - 1) / 2;
 	for(let i = 0; i < dimension; i++) {
-		let offI = (i-positionOffset);
-		let x = offI * increment;
+		const offI = (i-positionOffset);
+		const x = offI * increment;
 		for(let j = 0; j < dimension; j++) {
-			let offJ = (j - positionOffset);
-			let y = offJ * increment;
+			const offJ = (j - positionOffset);
+			const y = offJ * increment;
 			for(let k = 0; k < dimension; k++) {
-				let materials = cubeMaterials.map(m => new THREE.MeshBasicMaterial({color: m.color}));
-				let offK = (k - positionOffset);
-				let z = offK * increment;
+				const materials = cubeMaterials.map(m => new THREE.MeshBasicMaterial({color: m.color}));
+				const offK = (k - positionOffset);
+				const z = offK * increment;
 				setHiddenSidesToBlack(materials, offI, offJ, offK);
-				let qb = newCubie(x,y,z, materials);
+				const qb = newCubie(x,y,z, materials);
 				if(isCenter(offI, offJ, offK)) {
 					centers.push(qb);	
 				}	
@@ -177,8 +172,8 @@ function createCubies() {
 }
 
 function newCubie(x,y,z, materials) {
-	let cubeGeometry = new THREE.CubeGeometry(cubeSize, cubeSize, cubeSize);
-	let qb = new THREE.Mesh(cubeGeometry, materials);	
+	const cubeGeometry = new THREE.CubeGeometry(cubeSize, cubeSize, cubeSize);
+	const qb = new THREE.Mesh(cubeGeometry, materials);	
 	qb.position.set(x,y,z);
 	return qb;
 }
@@ -216,20 +211,20 @@ function isCenter(i,j,k) {
 
 /*** TURNING ***/
 function handleCubeTurn(deltaMove) {
-		let norm = intersected.face.normal.clone();
-		let mat = new THREE.Matrix4();
+		const norm = intersected.face.normal.clone();
+		const mat = new THREE.Matrix4();
 		mat.extractRotation(intersected.object.matrix);
 		norm.applyMatrix4(mat);
 		norm.normalize();
 
-		let proj = project(deltaMove);
+		const proj = project(deltaMove);
 
-		let face = new THREE.Vector3();
+		const face = new THREE.Vector3();
 		face.crossVectors(norm, proj);
 		face.normalize();
 
-		let pos = intersected.point.normalize();
-		let dot = face.dot(pos);
+		const pos = intersected.point.normalize();
+		const dot = face.dot(pos);
 		// a negative dot product tells us that the chosen face is on the
 		// opposite side of the cube 
 		if(dot < 0) {
@@ -246,10 +241,10 @@ function handleCubeTurn(deltaMove) {
 }
 
 function turn(face, dir) {
-	let center = selectCenter(face);
+	const center = selectCenter(face);
 	turnFace = center.position.clone();
 	turnFace.normalize();	
-	let selection = select(turnFace);
+	const selection = select(turnFace);
 	currentSelection = selection;
 	isTurning = true;
 	turnDir = dir;
@@ -258,10 +253,10 @@ function turn(face, dir) {
 function selectCenter(face) {
 	let selectCenter;
 	let maxDot  = -1000;
-	for(let qb of centers) {
-		let pos = qb.position.clone();
+	for(const qb of centers) {
+		const pos = qb.position.clone();
 		pos.normalize();
-		let dot = face.dot(pos);
+		const dot = face.dot(pos);
 		if(dot > maxDot) {
 			selectCenter = qb;
 			maxDot = dot;
@@ -271,11 +266,11 @@ function selectCenter(face) {
 }
 
 function select(face) {
-	let selection = [];
-	for(let qb of cube) {
-		let pos = qb.position.clone();
+	const selection = [];
+	for(const qb of cube) {
+		const pos = qb.position.clone();
 		pos.normalize();
-		let dot = face.dot(pos);	
+		const dot = face.dot(pos);	
 		if(dot > 0.1) {
 			selection.push(qb)
 		}
@@ -287,8 +282,8 @@ function select(face) {
 function animate() {
 	requestAnimationFrame( animate );
 	if(isTurning) {
-		let rot = makeRotationMatrix(turnFace, turnSpeed*turnDir*Math.PI/2, true); 
-		for(let qb of currentSelection) {
+		const rot = makeRotationMatrix(turnFace, turnSpeed*turnDir*Math.PI/2, true); 
+		for(const qb of currentSelection) {
 			qb.applyMatrix4(rot);
 		}
 		t += turnSpeed;
@@ -307,8 +302,8 @@ function animate() {
 /*** MISC UTILS ***/
 
 function project(vec) {
-	let x = Math.abs(vec.x);
-	let y = Math.abs(vec.y);	
+	const x = Math.abs(vec.x);
+	const y = Math.abs(vec.y);	
 	if(x > y) {
 		return new THREE.Vector3(vec.x, 0, 0);
 	}

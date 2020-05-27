@@ -51,6 +51,24 @@ function init() {
 	renderer.domElement.onmousedown = handleMouseDown; 
 	renderer.domElement.onmouseup   = (e) => { isDragging = false; isMouseOnCube = false;}
 	renderer.domElement.onmousemove = handleMouseMove;
+
+	renderer.domElement.ontouchstart = handleTouchStart;
+	renderer.domElement.ontouchmove = handleTouchMove;
+	renderer.domElement.ontouchend = (e) => { isDragging = false; isMouseOnCube = false;}
+}
+
+function handleTouchStart(event) {
+	event.preventDefault();
+	prevMouse = {
+		x: event.touches[0].pageX,
+		y: event.touches[0].pageY
+	}
+	
+	mouse.x = (event.touches[0].pageX / window.innerWidth) * 2 - 1;
+	mouse.y = -(event.touches[0].pageY / window.innerHeight) * 2 + 1
+
+	
+	handleMouseDown(event.touches[0]);
 }
 
 function handleMouseDown(event) {
@@ -64,15 +82,19 @@ function handleMouseDown(event) {
 	}
 }
 
+function handleTouchMove(event) { event.preventDefault(); handleMouseMove(event.touches[0]);
+}
+
 function handleMouseMove(event) {
+	//console.log(event);
 	// calculate mouse position in normalized device coordinates
 	// (-1 to +1) for both components
-	mouse.x = (event.offsetX / window.innerWidth) * 2 - 1;
-	mouse.y = -(event.offsetY / window.innerHeight) * 2 + 1
+	mouse.x = (event.pageX / window.innerWidth) * 2 - 1;
+	mouse.y = -(event.pageY / window.innerHeight) * 2 + 1
 
 	let deltaMove = { 
-		x: event.offsetX - prevMouse.x,
-		y: event.offsetY - prevMouse.y	
+		x: event.pageX - prevMouse.x,
+		y: event.pageY - prevMouse.y	
 	};
 	
 	if (isDragging) {
@@ -96,8 +118,8 @@ function handleMouseMove(event) {
 	}
 	
 	prevMouse = {
-		x: event.offsetX,
-		y: event.offsetY
+		x: event.pageX,
+		y: event.pageY
 	}
 }
 

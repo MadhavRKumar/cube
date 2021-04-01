@@ -172,7 +172,7 @@ function createCubies() {
 }
 
 function newCubie(x,y,z, materials) {
-	const cubeGeometry = new THREE.CubeGeometry(cubeSize, cubeSize, cubeSize);
+	const cubeGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
 	const qb = new THREE.Mesh(cubeGeometry, materials);	
 	qb.position.set(x,y,z);
 	return qb;

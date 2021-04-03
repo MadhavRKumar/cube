@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-let camera, scene, renderer, cubeMaterials; 
+let camera, scene, renderer; 
 const cube = [], centers = [];
 const cubeSize = 3, spacing = 0.25, dimension = 3, increment = cubeSize + spacing;
 const colors = [ 
@@ -47,8 +47,7 @@ function init() {
 
 	scene = new THREE.Scene();
 	
-	initMaterials();
-	createCubies();
+	createCubies(initMaterials());
 
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.setSize( window.innerWidth, window.innerHeight );
@@ -144,10 +143,10 @@ function makeRotationMatrix(dir, angle, isRadians=false) {
 
 
 function initMaterials() {
-	cubeMaterials = colors.map( (c) => new THREE.MeshBasicMaterial({color: c}));
+	return colors.map( (c) => new THREE.MeshBasicMaterial({color: c}));
 }
 
-function createCubies() {
+function createCubies(cubeMaterials) {
 	const positionOffset = (dimension - 1) / 2;
 	for(let i = 0; i < dimension; i++) {
 		const offI = (i-positionOffset);

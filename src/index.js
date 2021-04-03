@@ -2,12 +2,6 @@ import * as THREE from 'three'
 
 let camera, scene, renderer; 
 const cube = [], centers = [];
-const cubeSize = 3, spacing = 0.25, dimension = 3, increment = cubeSize + spacing;
-const colors = [ 
-	0xB90000, 0xFF5900, // LEFT RIGHT 
-	0xFFFFFF, 0xFFD500, // TOP BOTTOM
-	0x009B48, 0x0045AD, // FRONT BACK 
-];
 
 const LEFT = 0, RIGHT = 1, TOP = 2, BOTTOM = 3, FRONT = 4, BACK = 5;
 
@@ -46,8 +40,15 @@ function init() {
 	camera.position.z = 40;
 
 	scene = new THREE.Scene();
+
+	const colors = [ 
+		0xB90000, 0xFF5900, // LEFT RIGHT 
+		0xFFFFFF, 0xFFD500, // TOP BOTTOM
+		0x009B48, 0x0045AD, // FRONT BACK 
+	];
 	
-	createCubies(initMaterials());
+	const cubeSize = 3, spacing = 0.25, dimension = 3, increment = cubeSize + spacing;
+	createCubies(initMaterials(colors), { cubeSize, increment, dimension });
 
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.setSize( window.innerWidth, window.innerHeight );
@@ -57,8 +58,8 @@ function init() {
 	renderer.domElement.onmousemove = handleMouseMove;
 	renderer.domElement.onmouseup   = handleMouseUp; 
 
-	renderer.domElement.ontouchstart = handconstouchStart;
-	renderer.domElement.ontouchmove = handconstouchMove;
+	renderer.domElement.ontouchstart = handleTouchStart;
+	renderer.domElement.ontouchmove = handleTouchMove;
 	renderer.domElement.ontouchend = handleMouseUp; 
 	
 	window.onresize = handleResize;
@@ -79,7 +80,7 @@ function handleMouseUp(event) {
 	isMouseOnCube = false;
 }
 
-function handconstouchStart(event) {
+function handleTouchStart(event) {
 	event.preventDefault();
 	prevMouse.x = event.touches[0].pageX;
 	prevMouse.y = event.touches[0].pageY;
@@ -103,13 +104,13 @@ function handleMouseDown(event) {
 	}
 }
 
-function handconstouchMove(event) { 
+function handleTouchMove(event) { 
 	event.preventDefault(); 
 	handleMouseMove(event.touches[0]);
 }
 
 function handleMouseMove(event) {
-	//console.log(event);
+
 	// calculate mouse position in normalized device coordinates
 	// (-1 to +1) for both components
 	mouse.x = (event.pageX / window.innerWidth) * 2 - 1;
@@ -142,11 +143,17 @@ function makeRotationMatrix(dir, angle, isRadians=false) {
 }
 
 
-function initMaterials() {
+function initMaterials(colors) {
 	return colors.map( (c) => new THREE.MeshBasicMaterial({color: c}));
 }
 
-function createCubies(cubeMaterials) {
+function createCubies(cubeMaterials, props) {
+	let {
+		dimension,
+		cubeSize,
+		increment
+	} = props;
+
 	const positionOffset = (dimension - 1) / 2;
 	for(let i = 0; i < dimension; i++) {
 		const offI = (i-positionOffset);
@@ -158,8 +165,8 @@ function createCubies(cubeMaterials) {
 				const materials = cubeMaterials.map(m => new THREE.MeshBasicMaterial({color: m.color}));
 				const offK = (k - positionOffset);
 				const z = offK * increment;
-				setHiddenSidesToBlack(materials, offI, offJ, offK);
-				const qb = newCubie(x,y,z, materials);
+				setHiddenSidesToBlack(materials, offI, offJ, offK, dimension);
+				const qb = newCubie(x,y,z, materials, cubeSize);
 				if(isCenter(offI, offJ, offK)) {
 					centers.push(qb);	
 				}	
@@ -170,32 +177,32 @@ function createCubies(cubeMaterials) {
 	}
 }
 
-function newCubie(x,y,z, materials) {
+function newCubie(x,y,z, materials, cubeSize) {
 	const cubeGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
 	const qb = new THREE.Mesh(cubeGeometry, materials);	
 	qb.position.set(x,y,z);
 	return qb;
 }
 
-function setHiddenSidesToBlack(materials, offI, offJ, offK) {
-		if((offJ > -1)) {
+function setHiddenSidesToBlack(materials, offI, offJ, offK, dimension) {
+		if((offJ > -Math.floor(dimension/2))) {
 			setToBlack(materials, BOTTOM);
 		}
-		if((offJ < 1)) {
+		if((offJ < Math.floor(dimension/2))) {
 			setToBlack(materials, TOP);
 		}
 
-		if((offK > -1)) {
+		if((offK > -Math.floor(dimension/2))) {
 			setToBlack(materials, BACK);
 		}
-		if((offK < 1)) {
+		if((offK < Math.floor(dimension/2))) {
 			setToBlack(materials, FRONT);
 		}	
 
-		if((offI > -1)) {
+		if((offI > -Math.floor(dimension/2))) {
 			setToBlack(materials, RIGHT);
 		}
-		if((offI < 1)) {
+		if((offI < Math.floor(dimension/2))) {
 			setToBlack(materials, LEFT);
 		}
 }

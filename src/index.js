@@ -95,13 +95,14 @@ function handleTouchStart(event) {
 
 function handleMouseDown(event) {
 	raycaster.setFromCamera(mouse, camera);
-
 	const intersects = raycaster.intersectObjects(scene.children);
 	isMouseOnCube = intersects.length > 0;
 	isDragging = !isMouseOnCube;
 	if(isMouseOnCube) {
 		intersected = intersects[0];
 	}
+	deltaMove.x = 0;
+	deltaMove.y = 0;
 }
 
 function handleTouchMove(event) { 
@@ -217,6 +218,9 @@ function isCenter(i,j,k) {
 
 /*** TURNING ***/
 function handleCubeTurn(deltaMove) {
+	const deltaMoveVec = new THREE.Vector2(deltaMove.x, deltaMove.y);
+
+	if(deltaMoveVec.length() >= 1) {
 		const norm = intersected.face.normal.clone();
 		const mat = new THREE.Matrix4();
 		mat.extractRotation(intersected.object.matrix);
@@ -244,6 +248,7 @@ function handleCubeTurn(deltaMove) {
 		}
 
 		turn(face, dir);
+	}
 }
 
 function turn(face, dir) {
